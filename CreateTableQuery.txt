@@ -1,0 +1,28 @@
+SELECT 
+    'CREATE TABLE ' + 
+    QUOTENAME(TABLE_SCHEMA) + '.' + QUOTENAME(TABLE_NAME) + ' (' + 
+    STUFF((
+        SELECT ', ' + 
+            QUOTENAME(COLUMN_NAME) + ' ' + 
+            DATA_TYPE + 
+            CASE 
+                WHEN CHARACTER_MAXIMUM_LENGTH IS NOT NULL THEN '(' + CAST(CHARACTER_MAXIMUM_LENGTH AS VARCHAR) + ')' 
+                ELSE '' 
+            END + 
+            CASE 
+                WHEN IS_NULLABLE = 'No' THEN ' NOT NULL' 
+                ELSE '' 
+            END +
+            CASE
+                WHEN DATA_TYPE IN ('int', 'decimal', 'numeric', 'float', 'real') THEN ' DEFAULT 0'
+                WHEN DATA_TYPE IN ('char', 'varchar', 'nchar', 'nvarchar', 'text', 'ntext') THEN ' DEFAULT '''''
+                ELSE ''
+            END
+        FROM INFORMATION_SCHEMA.COLUMNS AS Columns 
+        WHERE Columns.TABLE_NAME = Tables.TABLE_NAME AND Columns.TABLE_SCHEMA = Tables.TABLE_SCHEMA 
+        ORDER BY ORDINAL_POSITION 
+        FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') + 
+    ');'
+FROM INFORMATION_SCHEMA.TABLES AS Tables 
+WHERE TABLE_TYPE = 'BASE TABLE'
+ORDER BY TABLE_SCHEMA, TABLE_NAME;
